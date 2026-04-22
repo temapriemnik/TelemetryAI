@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity
@@ -7,9 +7,14 @@ from flask_cors import CORS
 from models import db, User, Project, ApiKey
 from datetime import timedelta
 from functools import wraps
+import os
 
-app = Flask(__name__)
-CORS(app)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), 'frontend')
+
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
+
+CORS(app, origins='*')
 
 # Конфигурация
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -39,16 +44,11 @@ def require_api_key(f):
 
 @app.route('/')
 def index():
-    return jsonify({
-        'message': 'API работает',
-        'endpoints': {
-            'auth': '/api/auth',
-            'profile': '/api/profile',
-            'projects': '/api/projects',
-            'api_keys': '/api/api-keys',
-            'agent': '/api/agent'
-        }
-    })
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
