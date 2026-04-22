@@ -14,20 +14,6 @@
 
 Убедитесь, что у вас есть три папки с соответствующими файлами:
 
-project/
-├── backend/
-│ ├── app.py
-│ ├── models.py
-│ └── requirements.txt
-├── frontend/
-│ ├── index.html
-│ ├── style.css
-│ └── script.js
-└── agent/
-├── agent.py
-└── requirements.txt
-
-
 ### 2. Запуск бэкенда (Flask)
 
 Откройте терминал в папке `backend` и выполните:
