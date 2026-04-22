@@ -4,9 +4,12 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"telemetry-service/internal/transport/kafka"
 	"telemetry-service/internal/usecase"
@@ -28,6 +31,18 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to create kafka consumer: ", err)
 	}
+
+	metricsPort := getEnv("METRICS_PORT", "8080")
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		logger.Info("starting metrics server", "port", metricsPort)
+		if err := http.ListenAndServe(":"+metricsPort, nil); err != nil && err != http.ErrServerClosed {
+			log.Fatal("metrics server error: ", err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 

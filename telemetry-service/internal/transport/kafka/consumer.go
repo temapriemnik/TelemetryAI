@@ -9,6 +9,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/hamba/avro/v2"
 
+	"telemetry-service/internal/metrics"
 	"telemetry-service/internal/usecase"
 )
 
@@ -100,14 +101,22 @@ func (c *Consumer) Start(ctx context.Context) error {
 }
 
 func (c *Consumer) processMessage(msg *kafka.Message) error {
+	startTime := time.Now()
+
+	metrics.KafkaMessagesReceived.Inc()
+
 	var record RawLogRecord
 	if err := avro.Unmarshal(rawLogSchema, msg.Value, &record); err != nil {
+		metrics.ProcessingErrors.WithLabelValues("unmarshal").Inc()
 		return err
 	}
 
 	c.logger.Debug("received log record", "api_key", record.APIKey, "time", record.Time)
 
 	level := c.service.DetectLevel(record.LogMessage)
+
+	metrics.ProcessedLogs.WithLabelValues(string(level)).Inc()
+	metrics.ProcessingDuration.Observe(time.Since(startTime).Seconds())
 
 	c.logger.Info("detected level", "api_key", record.APIKey, "level", level)
 
