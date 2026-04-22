@@ -9,12 +9,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func init() {
-	prometheus.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	prometheus.MustRegister(collectors.NewGoCollector())
-}
-
 var (
+	registry = prometheus.NewRegistry()
+
 	ProcessedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "telemetry_service_logs_processed_total",
 		Help: "Total number of logs processed",
@@ -37,6 +34,15 @@ var (
 	})
 )
 
+func init() {
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
+	registry.MustRegister(ProcessedLogs)
+	registry.MustRegister(ProcessingErrors)
+	registry.MustRegister(ProcessingDuration)
+	registry.MustRegister(KafkaMessagesReceived)
+}
+
 func Handler() http.Handler {
-	return promhttp.Handler()
+	return promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 }
