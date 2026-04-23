@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -21,7 +23,7 @@ func main() {
 		Level: slog.LevelDebug,
 	}))
 
-	levelDetection := usecase.NewLevelDetectionService(logger, &nopModelClient{})
+levelDetection := usecase.NewLevelDetectionService(logger, &nopModelClient{})
 
 	kafkaConsumer, err := kafka.NewConsumer(kafka.Config{
 		Brokers: getEnv("KAFKA_BROKERS", "localhost:9092"),
@@ -37,6 +39,27 @@ func main() {
 		http.Handle("/metrics", promhttp.Handler())
 		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
+		})
+		http.HandleFunc("/detect", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "failed to read body", http.StatusBadRequest)
+				return
+			}
+			var req struct {
+				Log string `json:"log"`
+			}
+			if err := json.Unmarshal(body, &req); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			level := levelDetection.DetectLevel(req.Log)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"level": string(level)}) //nolint:errcheck
 		})
 		logger.Info("starting metrics server", "port", metricsPort)
 		if err := http.ListenAndServe(":"+metricsPort, nil); err != nil && err != http.ErrServerClosed {
