@@ -23,31 +23,51 @@ export default function Landing({ onLogin }: LandingProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent, action: 'login' | 'register') => {
-    e.preventDefault()
+  const handleLogin = async () => {
     setIsLoading(true)
     setError('')
 
     try {
-      const endpoint = action === 'login' ? '/api/auth/login' : '/api/auth/register'
-      
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
 
       const data = await res.json()
-      console.log(`${action} attempt - status:`, res.status, 'data:', data)
-
+      
       if (res.ok && data.token) {
         onLogin(data.token)
       } else {
-        setError(data.error || `${action} failed`)
+        setError(data.error || 'Login failed')
       }
     } catch (err) {
-      console.error('Auth error:', err)
-      setError('Connection error. Is the service running?')
+      setError('Connection error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRegister = async () => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+      
+      if (res.ok && data.token) {
+        onLogin(data.token)
+      } else {
+        setError(data.error || 'Registration failed')
+      }
+    } catch (err) {
+      setError('Connection error')
     } finally {
       setIsLoading(false)
     }
@@ -247,7 +267,7 @@ export default function Landing({ onLogin }: LandingProps) {
                   whileTap={{ scale: 0.99 }}
                   disabled={isLoading}
                   type="button"
-                  onClick={(e) => handleSubmit(e as unknown as React.FormEvent, 'login')}
+                  onClick={handleLogin}
                   className="py-3 bg-surface border border-border rounded-xl font-medium text-text hover:border-primary transition-colors disabled:opacity-50"
                 >
                   {isLoading ? 'Loading...' : 'Sign In'}
@@ -258,7 +278,7 @@ export default function Landing({ onLogin }: LandingProps) {
                   whileTap={{ scale: 0.99 }}
                   disabled={isLoading}
                   type="button"
-                  onClick={(e) => handleSubmit(e as unknown as React.FormEvent, 'register')}
+                  onClick={handleRegister}
                   className="py-3 bg-gradient-to-r from-primary to-primaryHover rounded-xl font-semibold text-white disabled:opacity-50"
                 >
                   {isLoading ? 'Loading...' : 'Sign Up'}
