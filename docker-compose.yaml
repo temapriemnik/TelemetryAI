@@ -40,6 +40,28 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
+  telemetry:
+    build:
+      context: ./telemetry-service
+      dockerfile: Dockerfile
+    container_name: telemetry_service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      KAFKA_BROKERS: kafka_broker:9092
+      KAFKA_GROUP: telemetry-service
+      KAFKA_TOPIC: raw.logs
+      METRICS_PORT: "8080"
+      GRPC_PORT: "50051"
+      BADGER_PATH: /data/apikeys
+    volumes:
+      - badger_data:/data/apikeys
+    depends_on:
+      - kafka
+
 volumes:
   pgdata:
   kafka_data:
+  badger_data:
