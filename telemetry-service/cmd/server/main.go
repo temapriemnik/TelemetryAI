@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -19,7 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	apikeysgrpc "telemetry-service/internal/transport/grpc"
-	"telemetry-service/internal/transport/kafka"
+	"telemetry-service/internal/transport/nats"
 	"telemetry-service/internal/usecase"
 	"telemetry-service/internal/usecase/nlpleveler"
 
@@ -41,14 +40,13 @@ func main() {
 
 	levelDetection := usecase.NewLevelDetectionService(logger, &nopModelClient{})
 
-	brokers := strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ",")
-	kafkaConsumer, err := kafka.NewConsumer(kafka.Config{
-		Brokers: brokers,
-		Group:   getEnv("KAFKA_GROUP", "telemetry-service"),
-		Topic:   getEnv("KAFKA_TOPIC", "raw.logs"),
+	natsURL := getEnv("NATS_URL", "nats://localhost:4222")
+	natsConsumer, err := nats.NewConsumer(nats.Config{
+		URL:     natsURL,
+		Subject: getEnv("NATS_SUBJECT", "raw.logs"),
 	}, levelDetection, storage, logger)
 	if err != nil {
-		log.Fatal("failed to create kafka consumer: ", err)
+		log.Fatal("failed to create nats consumer: ", err)
 	}
 
 	go func() {
@@ -128,7 +126,7 @@ func main() {
 	}()
 
 	log.Println("starting telemetry service...")
-	if err := kafkaConsumer.Start(ctx); err != nil {
+	if err := natsConsumer.Start(ctx); err != nil {
 		log.Fatal("consumer error: ", err)
 	}
 }

@@ -32,6 +32,11 @@ var (
 		Name: "telemetry_service_kafka_messages_received_total",
 		Help: "Total number of Kafka messages received",
 	})
+
+	NatsMessagesReceived = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "telemetry_service_nats_messages_received_total",
+		Help: "Total number of NATS messages received",
+	})
 )
 
 func init() {
@@ -40,7 +45,7 @@ func init() {
 	registry.MustRegister(ProcessedLogs)
 	registry.MustRegister(ProcessingErrors)
 	registry.MustRegister(ProcessingDuration)
-	registry.MustRegister(KafkaMessagesReceived)
+	registry.MustRegister(NatsMessagesReceived)
 }
 
 func Handler() http.Handler {

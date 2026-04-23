@@ -67,10 +67,10 @@ func main() {
 		Handler: httpRouter,
 	}
 
-	var grpcServer grpc.Server
+	grpcServer := grpc.NewServer()
 
 	grpcAPIKeyServer := grpcserver.NewAPIKeyServer(apiKeyService, projectRepo)
-	grpcserver.RegisterAPIKeyServiceServer(grpcServer, grpcAPIKeyServer)
+	grpcAPIKeyServer.Register(grpcServer)
 
 	grpcLis, err := net.Listen("tcp", ":"+cfg.GRPCPort)
 	if err != nil {
