@@ -39,6 +39,11 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
     full_name: str | None = None
