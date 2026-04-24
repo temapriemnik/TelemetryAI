@@ -13,6 +13,7 @@ type ProjectRepository interface {
 	GetByID(id int) (*models.Project, error)
 	GetByUserID(userID int) ([]*models.Project, error)
 	GetByAPIKey(apiKey string) (*models.Project, error)
+	GetByIDWithUserEmail(id int) (*models.Project, string, error)
 	Delete(id int) error
 	Update(project *models.Project) error
 }

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
 func main() {
@@ -38,20 +37,6 @@ func main() {
 	}
 	defer nc.Close()
 
-	js, err := jetstream.New(nc)
-	if err != nil {
-		log.Fatalf("Failed to create jetstream: %v", err)
-	}
-
-	ctx := context.Background()
-	_, err = js.CreateStream(ctx, jetstream.StreamConfig{
-		Name:     "logs",
-		Subjects: []string{cfg.NATS.Topic},
-	})
-	if err != nil && !isStreamExistsErr(err) {
-		log.Fatalf("Failed to create stream: %v", err)
-	}
-
 	log.Printf("Connected to NATS at %s, topic: %s", cfg.NATS.URLs, cfg.NATS.Topic)
 
 	log.Println("Discovering containers...")
@@ -64,7 +49,7 @@ func main() {
 	}
 
 	exclude := map[string]bool{
-		"log-collector": true,
+		"log-collector":  true,
 		"/log-collector": true,
 	}
 
@@ -76,7 +61,7 @@ func main() {
 			continue
 		}
 		log.Printf("Starting to follow logs for: %s", name)
-		go followLogs(ctx, js, name, cfg.NATS.Topic, cfg.APIKey)
+		go followLogs(context.Background(), nc, name, cfg.NATS.Topic, cfg.APIKey)
 		started++
 	}
 
@@ -93,7 +78,7 @@ func main() {
 	<-quit
 }
 
-func followLogs(ctx context.Context, js jetstream.JetStream, containerName, topic, apiKey string) {
+func followLogs(ctx context.Context, nc *nats.Conn, containerName, topic, apiKey string) {
 	cmd := exec.Command("docker", "logs", "-f", "--tail", "10", containerName)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -122,25 +107,31 @@ func followLogs(ctx context.Context, js jetstream.JetStream, containerName, topi
 			continue
 		}
 
-		_, err = js.Publish(ctx, topic, b)
-		if err != nil {
+		if nc == nil || nc.IsClosed() {
+			log.Printf("nats connection closed, cannot publish for %s", containerName)
+			continue
+		}
+
+		if err := nc.Publish(topic, b); err != nil {
 			log.Printf("publish error: %v", err)
 		}
 	}
 
-	cmd.Wait()
+	if err := scanner.Err(); err != nil {
+		log.Printf("scanner error for %s: %v", containerName, err)
+	}
+
+	_ = cmd.Wait()
 }
 
 func isStreamExistsErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err.Error() == "stream name already exists"
+	// not used with plain NATS but kept for compatibility if referenced elsewhere
+	return false
 }
 
 type Config struct {
 	APIKey string    `json:"api_key"`
-	NATS  NATSConfig `json:"nats"`
+	NATS   NATSConfig `json:"nats"`
 }
 
 type NATSConfig struct {
@@ -176,6 +167,7 @@ func loadConfig(path string) (*Config, error) {
 	if cfg.NATS.URLs == "" {
 		cfg.NATS.URLs = "localhost:4222"
 	}
+	// keep commas as-is; original code replaced with same value
 	cfg.NATS.URLs = strings.ReplaceAll(cfg.NATS.URLs, ",", ",")
 
 	return &cfg, nil

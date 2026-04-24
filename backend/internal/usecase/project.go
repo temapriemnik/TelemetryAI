@@ -48,6 +48,12 @@ type UpdateProjectInput struct {
 	Architecture string `json:"architecture,omitempty"`
 }
 
+type AlertDataOutput struct {
+	UserEmail    string `json:"user_email"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 func (s *ProjectService) Create(input CreateProjectInput) (ProjectOutput, error) {
 	slog.Info("creating project", "user_id", input.UserID, "name", input.Name)
 	
@@ -198,5 +204,23 @@ func (s *ProjectService) Update(id, userID int, input UpdateProjectInput) (Proje
 		Architecture: project.Architecture,
 		Description:  project.Description,
 		CreatedAt:    project.CreatedAt,
+	}, nil
+}
+
+func (s *ProjectService) GetAlertData(projectID int) (AlertDataOutput, error) {
+	project, userEmail, err := s.projectRepo.GetByIDWithUserEmail(projectID)
+	if err != nil {
+		slog.Error("failed to get project with user email", "error", err, "project_id", projectID)
+		return AlertDataOutput{}, err
+	}
+	if project == nil {
+		slog.Warn("project not found for alert", "project_id", projectID)
+		return AlertDataOutput{}, ErrProjectNotFound
+	}
+
+	return AlertDataOutput{
+		UserEmail:   userEmail,
+		Name:        project.Name,
+		Description: project.Description,
 	}, nil
 }

@@ -7,10 +7,11 @@ import (
 )
 
 type Router struct {
-	authHandler     *AuthHandler
+	authHandler      *AuthHandler
 	projectHandler  *ProjectHandler
 	logHandler      *LogHandler
-	wsHandler      *WSHandler
+	wsHandler       *WSHandler
+	internalHandler *InternalHandler
 }
 
 func NewRouter(
@@ -18,12 +19,14 @@ func NewRouter(
 	projectHandler *ProjectHandler,
 	logHandler *LogHandler,
 	wsHandler *WSHandler,
+	internalHandler *InternalHandler,
 ) *Router {
 	return &Router{
-		authHandler:    authHandler,
-		projectHandler: projectHandler,
-		logHandler:     logHandler,
-		wsHandler:     wsHandler,
+		authHandler:       authHandler,
+		projectHandler:   projectHandler,
+		logHandler:       logHandler,
+		wsHandler:       wsHandler,
+		internalHandler: internalHandler,
 	}
 }
 
@@ -51,6 +54,9 @@ func (r *Router) Setup(authMiddleware func(http.Handler) http.Handler) http.Hand
 	wsRouter := router.PathPrefix("/ws").Subrouter()
 	wsRouter.Use(authMiddleware)
 	wsRouter.HandleFunc("/projects/{project_id}", r.wsHandler.HandleWSSessions).Methods("GET")
+
+	internalRouter := router.PathPrefix("/internal").Subrouter()
+	internalRouter.HandleFunc("/projects/{id}/alert-data", r.internalHandler.GetAlertData).Methods("GET")
 
 	return router
 }

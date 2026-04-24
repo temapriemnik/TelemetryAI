@@ -96,3 +96,24 @@ func (r *projectRepository) Update(project *models.Project) error {
 	_, err := r.pool.Exec(context.Background(), query, project.Name, project.Description, project.Architecture, project.ID)
 	return err
 }
+
+func (r *projectRepository) GetByIDWithUserEmail(id int) (*models.Project, string, error) {
+	query := `
+		SELECT p.id, p.user_id, p.name, p.api_key, COALESCE(p.description, ''), COALESCE(p.architecture, ''), p.created_at, u.email
+		FROM projects p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.id = $1`
+
+	var project models.Project
+	var userEmail string
+	err := r.pool.QueryRow(context.Background(), query, id).
+		Scan(&project.ID, &project.UserID, &project.Name, &project.APIKey, &project.Description, &project.Architecture, &project.CreatedAt, &userEmail)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, "", nil
+	}
+	if err != nil {
+		return nil, "", err
+	}
+
+	return &project, userEmail, nil
+}

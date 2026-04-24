@@ -1,5 +1,5 @@
 {
-  "api_key": "test-key-123",
+  "api_key": "015cff46-9726-4a7d-af32-5bc8bc648678",
   "nats": {
     "urls": "localhost:4222",
     "topic": "raw.logs"

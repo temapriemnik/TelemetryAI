@@ -1,0 +1,11 @@
+nats:
+  urls: nats:4222
+  topic: error
+
+backend:
+  url: http://backend:8080
+
+smtp:
+  host: mailhog
+  port: 1025
+  from: agent@telemetryai.local

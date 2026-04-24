@@ -76,8 +76,9 @@ func main() {
 	logHandler := transport.NewLogHandler(logService, hub)
 	authHandler := transport.NewAuthHandler(authService)
 	projectHandler := transport.NewProjectHandler(projectService)
+	internalHandler := transport.NewInternalHandler(projectService)
 
-	router := transport.NewRouter(authHandler, projectHandler, logHandler, wsHandler)
+	router := transport.NewRouter(authHandler, projectHandler, logHandler, wsHandler, internalHandler)
 	muxRouter := router.Setup(authMiddleware.Authenticate)
 
 	go hub.Run()
