@@ -41,27 +41,26 @@ func main() {
 
 	log.Println("Discovering containers...")
 
-	cmd := exec.Command("docker", "ps", "--format", "{{.Names}}")
+	useCompose := checkComposeExists()
+
+	var cmd *exec.Cmd
+	if useCompose {
+		cmd = exec.Command("docker", "compose", "ps", "--format", "{{.Name}}")
+	} else {
+		cmd = exec.Command("docker", "ps", "--format", "{{.Names}}")
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		log.Printf("failed to get containers: %v", err)
 		return
 	}
 
-	exclude := map[string]bool{
-		"log-collector":  true,
-		"/log-collector": true,
-	}
-
 	started := 0
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
 		name := scanner.Text()
-		if exclude[name] {
-			continue
-		}
 		log.Printf("Starting to follow logs for: %s", name)
-		go followLogs(context.Background(), nc, name, cfg.NATS.Topic, cfg.APIKey)
+		go followLogs(context.Background(), nc, name, cfg.NATS.Topic, cfg.APIKey, useCompose)
 		started++
 	}
 
@@ -78,8 +77,13 @@ func main() {
 	<-quit
 }
 
-func followLogs(ctx context.Context, nc *nats.Conn, containerName, topic, apiKey string) {
-	cmd := exec.Command("docker", "logs", "-f", "--tail", "10", containerName)
+func followLogs(ctx context.Context, nc *nats.Conn, containerName, topic, apiKey string, useCompose bool) {
+	var cmd *exec.Cmd
+	if useCompose {
+		cmd = exec.Command("docker", "compose", "logs", "-f", containerName)
+	} else {
+		cmd = exec.Command("docker", "logs", "-f", "--tail", "10", containerName)
+	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Printf("pipe error for %s: %v", containerName, err)
@@ -125,8 +129,12 @@ func followLogs(ctx context.Context, nc *nats.Conn, containerName, topic, apiKey
 }
 
 func isStreamExistsErr(err error) bool {
-	// not used with plain NATS but kept for compatibility if referenced elsewhere
 	return false
+}
+
+func checkComposeExists() bool {
+	_, err := os.Stat("docker-compose.yml")
+	return err == nil
 }
 
 type Config struct {

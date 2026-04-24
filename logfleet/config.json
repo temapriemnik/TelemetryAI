@@ -1,0 +1,7 @@
+{
+  "api_key": "afb230ad-56ec-45ae-b6a9-ccfeada82ace",
+  "nats": {
+    "urls": "localhost:4222",
+    "topic": "raw.logs"
+  }
+}
