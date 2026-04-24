@@ -9,3 +9,8 @@ app:
   host: 0.0.0.0
   port: 8080
   jwt_secret: your-secret-keyChangeInProduction
+
+nats:
+  urls: nats:4222
+  topic: raw.logs
+  error_topic: error

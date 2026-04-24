@@ -19,10 +19,15 @@ type NotificationService interface {
 	Send(level models.LogLevel, message string)
 }
 
+type ErrorPublisher interface {
+	Send(level models.LogLevel, projectID int, message string)
+}
+
 type LogService struct {
 	logRepo       repository.LogRepository
 	projectRepo   repository.ProjectRepository
 	notification  NotificationService
+	errorPublisher ErrorPublisher
 	logLevelRegex *regexp.Regexp
 	logger        *slog.Logger
 }
@@ -31,13 +36,15 @@ func NewLogService(
 	logRepo repository.LogRepository,
 	projectRepo repository.ProjectRepository,
 	notification NotificationService,
+	errorPublisher ErrorPublisher,
 ) *LogService {
 	regex := regexp.MustCompile(`(?i)(error|warn|warning)`)
 	return &LogService{
-		logRepo:       logRepo,
+		logRepo:        logRepo,
 		projectRepo:   projectRepo,
 		notification:  notification,
-		logLevelRegex: regex,
+		errorPublisher: errorPublisher,
+		logLevelRegex:  regex,
 	}
 }
 
@@ -84,6 +91,9 @@ func (s *LogService) Receive(input ReceiveLogInput) (LogOutput, error) {
 
 	if level == models.LogLevelError || level == models.LogLevelWarn {
 		s.notification.Send(level, input.Message)
+		if s.errorPublisher != nil {
+			s.errorPublisher.Send(level, project.ID, input.Message)
+		}
 	}
 
 	slog.Info("log received", "project_id", project.ID, "log_id", logEntry.ID, "level", level)

@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Database DatabaseConfig `yaml:"database"`
 	App     AppConfig       `yaml:"app"`
+	NATS    NATSConfig     `yaml:"nats"`
 }
 
 type DatabaseConfig struct {
@@ -24,6 +25,12 @@ type AppConfig struct {
 	Host      string `yaml:"host"`
 	Port      int    `yaml:"port"`
 	JWTSecret string `yaml:"jwt_secret"`
+}
+
+type NATSConfig struct {
+	URLs        string `yaml:"urls"`
+	Topic       string `yaml:"topic"`
+	ErrorTopic string `yaml:"error_topic"`
 }
 
 func Load(path string) (*Config, error) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nats-io/nats.go"
 
 	"telemetryai/internal/config"
 	"telemetryai/internal/middleware"
@@ -47,7 +48,25 @@ func main() {
 	authService := usecase.NewAuthService(userRepo, cfg.App.JWTSecret)
 	projectService := usecase.NewProjectService(projectRepo)
 	notificationService := usecase.NewMockNotificationService()
-	logService := usecase.NewLogService(logRepo, projectRepo, notificationService)
+
+	nc, err := nats.Connect(cfg.NATS.URLs)
+	if err != nil {
+		slog.Error("failed to connect to NATS", "error", err)
+		os.Exit(1)
+	}
+	defer nc.Close()
+	slog.Info("connected to NATS", "url", cfg.NATS.URLs)
+
+	natsErrorPublisher := transport.NewNATSNotificationPublisher(nc, cfg.NATS.ErrorTopic)
+	logService := usecase.NewLogService(logRepo, projectRepo, notificationService, natsErrorPublisher)
+
+	natsConsumer := transport.NewNATSConsumer(nc, logService, &cfg.NATS)
+	natsCtx, natsCancel := context.WithCancel(context.Background())
+	if err := natsConsumer.Start(natsCtx); err != nil {
+		slog.Error("failed to start NATS consumer", "error", err)
+		os.Exit(1)
+	}
+	defer natsCancel()
 
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 
