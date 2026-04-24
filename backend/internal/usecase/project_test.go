@@ -46,6 +46,11 @@ func (m *MockProjectRepoForTest) Delete(id int) error {
 	return args.Error(0)
 }
 
+func (m *MockProjectRepoForTest) Update(project *models.Project) error {
+	args := m.Called(project)
+	return args.Error(0)
+}
+
 func TestProjectService_Create(t *testing.T) {
 	mockRepo := new(MockProjectRepoForTest)
 	projectService := NewProjectService(mockRepo)

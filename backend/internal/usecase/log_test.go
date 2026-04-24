@@ -60,6 +60,11 @@ func (m *MProjectRepository) Delete(id int) error {
 	return args.Error(0)
 }
 
+func (m *MProjectRepository) Update(project *models.Project) error {
+	args := m.Called(project)
+	return args.Error(0)
+}
+
 func TestLogService_Receive_InfoLog(t *testing.T) {
 	mockLogRepo := new(MockLogRepository)
 	mockProjectRepo := new(MProjectRepository)

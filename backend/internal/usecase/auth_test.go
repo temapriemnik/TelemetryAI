@@ -19,8 +19,8 @@ func (m *MockUserRepository) Create(user *models.User) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) GetByTGID(tgID string) (*models.User, error) {
-	args := m.Called(tgID)
+func (m *MockUserRepository) GetByEmail(email string) (*models.User, error) {
+	args := m.Called(email)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -42,7 +42,7 @@ func TestAuthService_Register(t *testing.T) {
 	mockRepo.On("Create", mock.AnythingOfType("*models.User")).Return(nil)
 
 	input := RegisterInput{
-		TGID:     "test_user",
+		Email:    "test@example.com",
 		Password: "password123",
 	}
 
@@ -58,14 +58,14 @@ func TestAuthService_Login_ValidCredentials(t *testing.T) {
 
 	user := &models.User{
 		ID:           1,
-		TGID:         "test_user",
-		PasswordHash: "$2a$10$tNMifWYSyCRWYzwC7rz4..wZ02peap1ITES6e4ZDVHqDUFwv8KuK.", // password123
+		Email:        "test@example.com",
+		PasswordHash: "$2a$10$tNMifWYSyCRWYzwC7rz4..wZ02peap1ITES6e4ZDVHqDUFwv8KuK.",
 	}
 
-	mockRepo.On("GetByTGID", "test_user").Return(user, nil)
+	mockRepo.On("GetByEmail", "test@example.com").Return(user, nil)
 
 	input := LoginInput{
-		TGID:     "test_user",
+		Email:     "test@example.com",
 		Password: "password123",
 	}
 
@@ -80,10 +80,10 @@ func TestAuthService_Login_InvalidCredentials(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	authService := NewAuthService(mockRepo, "test-secret")
 
-	mockRepo.On("GetByTGID", "test_user").Return(nil, nil)
+	mockRepo.On("GetByEmail", "test@example.com").Return(nil, nil)
 
 	input := LoginInput{
-		TGID:     "test_user",
+		Email:     "test@example.com",
 		Password: "wrong_password",
 	}
 
@@ -104,7 +104,7 @@ func TestAuthService_ValidateToken(t *testing.T) {
 	})
 
 	input := RegisterInput{
-		TGID:     "test_user2",
+		Email:    "test2@example.com",
 		Password: "password123",
 	}
 
@@ -112,13 +112,13 @@ func TestAuthService_ValidateToken(t *testing.T) {
 	require.NoError(t, err)
 
 	loginInput := LoginInput{
-		TGID:     "test_user2",
+		Email:     "test2@example.com",
 		Password: "password123",
 	}
 
-	mockRepo.On("GetByTGID", "test_user2").Return(&models.User{
+	mockRepo.On("GetByEmail", "test2@example.com").Return(&models.User{
 		ID:           1,
-		TGID:         "test_user2",
+		Email:        "test2@example.com",
 		PasswordHash: "$2a$10$tNMifWYSyCRWYzwC7rz4..wZ02peap1ITES6e4ZDVHqDUFwv8KuK.",
 	}, nil)
 
