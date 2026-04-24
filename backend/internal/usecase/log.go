@@ -29,6 +29,7 @@ type LogService struct {
 	notification  NotificationService
 	errorPublisher ErrorPublisher
 	logLevelRegex *regexp.Regexp
+	nlpClient    NLPClient
 	logger        *slog.Logger
 }
 
@@ -37,6 +38,7 @@ func NewLogService(
 	projectRepo repository.ProjectRepository,
 	notification NotificationService,
 	errorPublisher ErrorPublisher,
+	nlpClient NLPClient,
 ) *LogService {
 	regex := regexp.MustCompile(`(?i)(error|warn|warning)`)
 	return &LogService{
@@ -45,6 +47,7 @@ func NewLogService(
 		notification:  notification,
 		errorPublisher: errorPublisher,
 		logLevelRegex:  regex,
+		nlpClient:     nlpClient,
 	}
 }
 
@@ -107,6 +110,18 @@ func (s *LogService) Receive(input ReceiveLogInput) (LogOutput, error) {
 }
 
 func (s *LogService) parseLogLevel(message string) models.LogLevel {
+	level := s.parseLogLevelRegex(message)
+
+	if level == models.LogLevelInfo && s.nlpClient != nil {
+		if label, err := s.nlpClient.PredictLevel(message); err == nil && label != "" {
+			return mapNLPToLogLevel(label)
+		}
+	}
+
+	return level
+}
+
+func (s *LogService) parseLogLevelRegex(message string) models.LogLevel {
 	re := regexp.MustCompile(`^\[(\w+)\]`)
 	matches := re.FindStringSubmatch(message)
 	if len(matches) > 1 {

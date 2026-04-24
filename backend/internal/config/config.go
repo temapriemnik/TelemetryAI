@@ -22,9 +22,10 @@ type DatabaseConfig struct {
 }
 
 type AppConfig struct {
-	Host      string `yaml:"host"`
-	Port      int    `yaml:"port"`
-	JWTSecret string `yaml:"jwt_secret"`
+	Host           string `yaml:"host"`
+	Port           int    `yaml:"port"`
+	JWTSecret      string `yaml:"jwt_secret"`
+	NLPServiceURL  string `yaml:"nlp_service_url"`
 }
 
 type NATSConfig struct {
@@ -58,6 +59,9 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("DATABASE_DBNAME"); v != "" {
 		cfg.Database.DBName = v
+	}
+	if v := os.Getenv("NLP_SERVICE_URL"); v != "" {
+		cfg.App.NLPServiceURL = v
 	}
 
 	return &cfg, nil

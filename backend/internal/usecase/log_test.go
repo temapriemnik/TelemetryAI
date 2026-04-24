@@ -64,7 +64,7 @@ func TestLogService_Receive_InfoLog(t *testing.T) {
 	mockLogRepo := new(MockLogRepository)
 	mockProjectRepo := new(MProjectRepository)
 	notificationService := NewMockNotificationService()
-	logService := NewLogService(mockLogRepo, mockProjectRepo, notificationService)
+	logService := NewLogService(mockLogRepo, mockProjectRepo, notificationService, nil, nil)
 
 	project := &models.Project{
 		ID:     1,
@@ -98,7 +98,7 @@ func TestLogService_Receive_WarnLogWithPrefix(t *testing.T) {
 	mockLogRepo := new(MockLogRepository)
 	mockProjectRepo := new(MProjectRepository)
 	notificationService := NewMockNotificationService()
-	logService := NewLogService(mockLogRepo, mockProjectRepo, notificationService)
+	logService := NewLogService(mockLogRepo, mockProjectRepo, notificationService, nil, nil)
 
 	project := &models.Project{
 		ID:     1,

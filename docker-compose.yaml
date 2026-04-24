@@ -6,6 +6,13 @@ services:
     ports:
       - "4222:4222"
 
+  nlp-service:
+    build:
+      context: ./nlp-service
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+
   postgres:
     image: postgres:16
     environment:
@@ -34,10 +41,13 @@ services:
       - DATABASE_USER=telemetryai
       - DATABASE_PASSWORD=telemetryai
       - DATABASE_DBNAME=telemetryai
+      - NLP_SERVICE_URL=http://nlp-service:5000
     depends_on:
       postgres:
         condition: service_healthy
       nats:
+        condition: service_started
+      nlp-service:
         condition: service_started
 
   frontend:

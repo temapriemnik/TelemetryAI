@@ -58,7 +58,8 @@ func main() {
 	slog.Info("connected to NATS", "url", cfg.NATS.URLs)
 
 	natsErrorPublisher := transport.NewNATSNotificationPublisher(nc, cfg.NATS.ErrorTopic)
-	logService := usecase.NewLogService(logRepo, projectRepo, notificationService, natsErrorPublisher)
+	nlpClient := usecase.NewNLPClient(cfg.App.NLPServiceURL)
+	logService := usecase.NewLogService(logRepo, projectRepo, notificationService, natsErrorPublisher, nlpClient)
 
 	natsConsumer := transport.NewNATSConsumer(nc, logService, &cfg.NATS)
 	natsCtx, natsCancel := context.WithCancel(context.Background())

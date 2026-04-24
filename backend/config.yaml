@@ -9,6 +9,7 @@ app:
   host: 0.0.0.0
   port: 8080
   jwt_secret: your-secret-keyChangeInProduction
+  nlp_service_url: http://nlp-service:5000
 
 nats:
   urls: nats:4222
