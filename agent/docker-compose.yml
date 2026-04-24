@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  log-collector:
+    build:
+      context: ./log-collector
+      dockerfile: Dockerfile
+    container_name: log-collector
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./log-collector/config.json:/app/config.json:ro
+    environment:
+      - NATS_URLS=nats:4222
+    depends_on:
+      - nats
+    network_mode: services_network
+    profiles:
+      - debug
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats
+    ports:
+      - "4222:4222"
+
+  api:
+    image: alpine:latest
+    container_name: api
+    command: ["sh", "-c", "while true; do echo 'API: request received'; sleep 2; done"]
+
+  worker:
+    image: alpine:latest
+    container_name: worker
+    command: ["sh", "-c", "while true; do echo 'Worker: processing job'; sleep 3; done"]
