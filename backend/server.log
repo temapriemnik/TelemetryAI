@@ -1,0 +1,9 @@
+{"time":"2026-04-24T06:22:20.796647125+03:00","level":"INFO","msg":"connected to database"}
+{"time":"2026-04-24T06:22:20.797275268+03:00","level":"INFO","msg":"migrations applied"}
+{"time":"2026-04-24T06:22:20.797562991+03:00","level":"INFO","msg":"starting server","host":"0.0.0.0","port":8080}
+{"time":"2026-04-24T06:22:22.796190381+03:00","level":"DEBUG","msg":"receiving log","api_key":"cbbacb91-4323-4311-bdbb-ebc53b4e50c4","message":"test log 456"}
+{"time":"2026-04-24T06:22:22.798006262+03:00","level":"DEBUG","msg":"inserting log","project_id":1,"level":"INFO"}
+{"time":"2026-04-24T06:22:22.826722758+03:00","level":"DEBUG","msg":"log inserted","log_id":2}
+{"time":"2026-04-24T06:22:22.826757505+03:00","level":"INFO","msg":"log received","project_id":1,"log_id":2,"level":"INFO"}
+{"time":"2026-04-24T06:24:20.895156235+03:00","level":"INFO","msg":"shutting server down..."}
+{"time":"2026-04-24T06:24:20.895392842+03:00","level":"INFO","msg":"server stopped"}

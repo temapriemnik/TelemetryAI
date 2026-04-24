@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keeplive — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #8b5cf6; --accent: #06b6d4; --bg: #030712; --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.08); }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: white; }
+        .glass { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); }
+        .glass-hover:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #7c3aed); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
+        .log-info { border-left: 3px solid #3b82f6; }
+        .log-warn { border-left: 3px solid #f59e0b; }
+        .log-error { border-left: 3px solid #ef4444; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 glass border-b">
+        <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <span class="font-bold text-xl">Keeplive</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="showCreateModal()" class="btn-primary px-4 py-2 rounded-lg font-medium text-sm">+ New Project</button>
+                <button onclick="logout()" class="text-gray-400 hover:text-white text-sm">Sign out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Projects Grid -->
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <h2 class="text-lg text-gray-400 mb-6">Your Projects</h2>
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Projects loaded via JS -->
+        </div>
+    </main>
+
+    <!-- Logs Section (shown when project selected) -->
+    <div id="logs-section" class="hidden max-w-6xl mx-auto px-6 pb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <button onclick="closeLogs()" class="text-gray-400 hover:text-white mb-2">← Back to projects</button>
+                <h2 class="text-xl font-semibold" id="logs-project-name">Logs</h2>
+            </div>
+            <button onclick="refreshLogs()" class="p-2 hover:bg-white/10 rounded-lg">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="glass rounded-xl p-4">
+                <div class="text-sm text-gray-400 mb-1">Total</div>
+                <div class="text-2xl font-bold" id="stat-total">-</div>
+            </div>
+            <div class="glass rounded-xl p-4">
+                <div class="text-sm text-gray-400 mb-1">INFO</div>
+                <div class="text-2xl font-bold text-blue-400" id="stat-info">-</div>
+            </div>
+            <div class="glass rounded-xl p-4">
+                <div class="text-sm text-gray-400 mb-1">WARN</div>
+                <div class="text-2xl font-bold text-yellow-400" id="stat-warn">-</div>
+            </div>
+            <div class="glass rounded-xl p-4">
+                <div class="text-sm text-gray-400 mb-1">ERROR</div>
+                <div class="text-2xl font-bold text-red-400" id="stat-error">-</div>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="glass rounded-xl overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-white/5">
+                        <th class="text-left text-xs text-gray-500 uppercase font-medium px-4 py-3">Timestamp</th>
+                        <th class="text-left text-xs text-gray-500 uppercase font-medium px-4 py-3">Level</th>
+                        <th class="text-left text-xs text-gray-500 uppercase font-medium px-4 py-3">Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="create-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideCreateModal()"></div>
+        <div class="relative glass border border-white/10 rounded-2xl p-6 w-full max-w-2xl">
+            <h3 class="text-xl font-semibold mb-5">Create New Project</h3>
+            <input id="project-name" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white mb-3 focus:border-violet-500 focus:outline-none" placeholder="Project name">
+            <textarea id="project-desc" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white mb-4 focus:border-violet-500 focus:outline-none" placeholder="Description (you can write detailed notes, documentation, architecture, etc.)" rows="8"></textarea>
+            <div class="flex gap-3">
+                <button onclick="createProject()" class="btn-primary flex-1 py-3 rounded-xl font-medium">Create</button>
+                <button onclick="hideCreateModal()" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideEditModal()"></div>
+        <div class="relative glass border border-white/10 rounded-2xl p-6 w-full max-w-2xl">
+            <h3 class="text-xl font-semibold mb-5">Edit Project</h3>
+            <input id="edit-name" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white mb-3 focus:border-violet-500 focus:outline-none">
+            <textarea id="edit-desc" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white mb-4 focus:border-violet-500 focus:outline-none" rows="12"></textarea>
+            <div class="flex gap-3 mb-4">
+                <button onclick="saveProject()" class="btn-primary flex-1 py-3 rounded-xl font-medium">Save</button>
+                <button onclick="deleteProject()" class="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl">Delete</button>
+            </div>
+            <button onclick="hideEditModal()" class="text-gray-400 text-sm hover:text-white">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const WS_HOST = window.location.host;
+        let currentProject = null;
+        let ws = null;
+        
+        function init() {
+            const token = sessionStorage.getItem('token');
+            if (!token) { window.location.href = 'index.html'; return; }
+            loadProjects();
+        }
+        
+        function logout() {
+            if (ws) ws.close();
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+        
+        function loadProjects() {
+            fetch(API + '/projects', { headers: { 'Authorization': 'Bearer ' + sessionStorage.getItem('token') }})
+            .then(r => { if (r.status === 401) logout(); return r.json(); })
+            .then(data => {
+                const grid = document.getElementById('projects-grid');
+                grid.innerHTML = '';
+                if (data.length === 0) {
+                    grid.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-400">No projects yet. Create one to get started!</div>';
+                    return;
+                }
+                data.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'glass glass-hover rounded-2xl p-6 cursor-pointer transition';
+                    card.onclick = () => openProject(p);
+                    console.log('Project:', p);
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-1">${p.name}</h3>
+                                <p class="text-xs text-gray-500">Created ${new Date(p.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="copyApiKey('${p.api_key}', event)" class="p-2 hover:bg-white/10 rounded-lg" title="Copy API Key">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                </button>
+                                <button onclick="editProjectInfo(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}', event)" class="p-2 hover:bg-white/10 rounded-lg" title="Edit">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-gray-300 text-sm whitespace-pre-wrap min-h-[60px]">${p.description || 'No description'}</div>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <code class="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">${p.api_key.substring(0, 8)}...${p.api_key.substring(p.api_key.length - 4)}</code>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+        }
+        
+        function openProject(p) {
+            currentProject = p;
+            document.getElementById('projects-grid').classList.add('hidden');
+            document.getElementById('logs-section').classList.remove('hidden');
+            document.getElementById('logs-project-name').textContent = p.name;
+            loadLogs();
+            connectWebSocket();
+        }
+        
+        function closeLogs() {
+            if (ws) { ws.close(); ws = null; }
+            currentProject = null;
+            document.getElementById('projects-grid').classList.remove('hidden');
+            document.getElementById('logs-section').classList.add('hidden');
+        }
+        
+        function connectWebSocket() {
+            if (ws) ws.close();
+            const token = sessionStorage.getItem('token');
+            const wsUrl = WS_PROTOCOL + '//' + WS_HOST + '/api/ws/projects/' + currentProject.id + '?token=' + token;
+            console.log('Connecting to WS:', wsUrl);
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => console.log('WS connected');
+            ws.onmessage = (e) => {
+                console.log('WS message:', e.data);
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.log) {
+                        addLogRow(data.log);
+                        updateStats();
+                    }
+                } catch (err) { console.error('WS parse error', err); }
+            };
+            ws.onclose = () => console.log('WS disconnected');
+            ws.onerror = (e) => console.error('WS error', e);
+        }
+        
+        function addLogRow(log) {
+            const levelClass = log.level === 'ERROR' ? 'log-error' : log.level === 'WARN' ? 'log-warn' : 'log-info';
+            const levelColor = log.level === 'ERROR' ? 'bg-red-500/20 text-red-400' : log.level === 'WARN' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400';
+            const tbody = document.getElementById('logs-body');
+            const rows = tbody.querySelectorAll('tr');
+            if (rows.length > 0 && rows[0].querySelector('td')?.textContent === 'No logs yet') {
+                tbody.innerHTML = '';
+            }
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-white/5 ' + levelClass;
+            const time = log.time || log.timestamp;
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-sm text-gray-400 font-mono">${new Date(time).toLocaleString()}</td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${levelColor}">${log.level}</span></td>
+                <td class="px-4 py-3 text-sm">${log.message}</td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        }
+        
+        function updateStats() {
+            const rows = document.getElementById('logs-body').querySelectorAll('tr');
+            const logs = [];
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length >= 3) {
+                    logs.push({ level: cells[1].textContent.trim() });
+                }
+            });
+            document.getElementById('stat-total').textContent = logs.length;
+            document.getElementById('stat-info').textContent = logs.filter(l => l.level === 'INFO').length;
+            document.getElementById('stat-warn').textContent = logs.filter(l => l.level === 'WARN').length;
+            document.getElementById('stat-error').textContent = logs.filter(l => l.level === 'ERROR').length;
+        }
+        
+        function refreshLogs() {
+            if (currentProject) loadLogs();
+        }
+        
+        function loadLogs() {
+            if (!currentProject) return;
+            fetch(API + '/projects/' + currentProject.id + '/logs', { headers: { 'Authorization': 'Bearer ' + sessionStorage.getItem('token') }})
+            .then(r => {
+                console.log('logs response status:', r.status);
+                return r.json();
+            })
+            .then(data => {
+                console.log('logs data:', data);
+                const tbody = document.getElementById('logs-body');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">No logs yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(log => {
+                    const levelClass = log.level === 'ERROR' ? 'log-error' : log.level === 'WARN' ? 'log-warn' : 'log-info';
+                    const levelColor = log.level === 'ERROR' ? 'bg-red-500/20 text-red-400' : log.level === 'WARN' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400';
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-white/5 ' + levelClass;
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-400 font-mono">${new Date(log.timestamp).toLocaleString()}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${levelColor}">${log.level}</span></td>
+                        <td class="px-4 py-3 text-sm">${log.message}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                // Update stats
+                document.getElementById('stat-total').textContent = data.length;
+                document.getElementById('stat-info').textContent = data.filter(l => l.level === 'INFO').length;
+                document.getElementById('stat-warn').textContent = data.filter(l => l.level === 'WARN').length;
+                document.getElementById('stat-error').textContent = data.filter(l => l.level === 'ERROR').length;
+            })
+            .catch(e => console.error('loadLogs error:', e));
+        }
+        
+        function showCreateModal() { document.getElementById('create-modal').classList.remove('hidden'); }
+        function hideCreateModal() { document.getElementById('create-modal').classList.add('hidden'); }
+        
+        function createProject() {
+            const name = document.getElementById('project-name').value;
+            const description = document.getElementById('project-desc').value;
+            if (!name) return;
+            
+            fetch(API + '/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('token') },
+                body: JSON.stringify({ name, description })
+            }).then(r => r.json())
+            .then(data => {
+                hideCreateModal();
+                document.getElementById('project-name').value = '';
+                document.getElementById('project-desc').value = '';
+                loadProjects();
+            });
+        }
+        
+        function editProjectInfo(id, name, desc, event) {
+            if (event) event.stopPropagation();
+            currentProject = { id, name, description: desc };
+            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-desc').value = desc || '';
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+        
+        function hideEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+        
+        function saveProject() {
+            if (!currentProject) return;
+            fetch(API + '/projects/' + currentProject.id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('token') },
+                body: JSON.stringify({ name: document.getElementById('edit-name').value, description: document.getElementById('edit-desc').value })
+            }).then(r => r.json())
+            .then(data => {
+                hideEditModal();
+                loadProjects();
+            });
+        }
+        
+        function deleteProject() {
+            if (!currentProject || !confirm('Delete project?')) return;
+            fetch(API + '/projects/' + currentProject.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + sessionStorage.getItem('token') }})
+            .then(() => {
+                currentProject = null;
+                hideEditModal();
+                closeLogs();
+                loadProjects();
+            });
+        }
+        
+        function copyApiKey(key, event) {
+            if (event) event.stopPropagation();
+            navigator.clipboard.writeText(key).then(() => alert('API Key copied!'));
+        }
+        
+        init();
+    </script>
+</body>
+</html>
